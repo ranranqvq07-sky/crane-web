@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>三恋资料 · 纸鹤</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #050102;
+    font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+
+  /* ================= 加载界面 ================= */
+  #loading-screen {
+    position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 50%, #1a060a 0%, #050102 100%);
+    transition: opacity 0.8s ease, visibility 0.8s; overflow: hidden;
+  }
+  #loading-screen.hide { opacity: 0; visibility: hidden; }
+  
+  /* 加载完成时的冲击波特效 */
+  .shockwave {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 10px; height: 10px; border-radius: 50%; border: 2px solid #ff4d6d;
+    opacity: 0; pointer-events: none; box-shadow: 0 0 20px #ff4d6d;
+  }
+  .shockwave.play {
+    animation: blast 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  }
+  @keyframes blast {
+    0% { width: 10px; height: 10px; opacity: 1; border-width: 4px; }
+    100% { width: 150vw; height: 150vw; opacity: 0; border-width: 1px; }
+  }
+
+  .load-ornament {
+    position: absolute; width: 70vmin; height: 70vmin; border-radius: 50%;
+    border: 1px dashed rgba(255, 77, 109, 0.15); box-shadow: 0 0 40px rgba(255, 77, 109, 0.05) inset;
+    animation: spinOrnament 30s linear infinite; pointer-events: none;
+  }
+  .load-ornament::before {
+    content: ""; position: absolute; inset: 5vmin; border-radius: 50%;
+    border: 2px solid rgba(255, 77, 109, 0.08);
+  }
+  .load-ornament::after {
+    content: ""; position: absolute; inset: 15vmin; border-radius: 50%;
+    border: 1px dotted rgba(255, 77, 109, 0.2);
+  }
+  @keyframes spinOrnament { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  .load-particles { position: absolute; inset: 0; pointer-events: none; }
+  .load-particles i {
+    position: absolute; width: 3px; height: 3px; background: #ff4d6d; border-radius: 50%;
+    box-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d; opacity: 0;
+    animation: floatUp var(--dur, 4s) linear infinite; animation-delay: var(--delay, 0s); bottom: -10px;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(0.5); opacity: 0; }
+    20% { opacity: 0.8; }
+    80% { opacity: 0.6; }
+    100% { transform: translateY(-80vh) scale(1.5); opacity: 0; }
+  }
+
+  .loading-content {
+    position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 2.5vmin;
+  }
+  .loading-text {
+    font-family: "Songti SC", "Noto Serif SC", "STSong", serif; font-size: clamp(20px, 3vmin, 36px);
+    color: #ff4d6d; letter-spacing: 0.35em; text-indent: 0.35em; animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; text-shadow: 0 0 10px rgba(255, 77, 109, 0); }
+    50% { opacity: 1; text-shadow: 0 0 20px rgba(255, 77, 109, 0.6), 0 0 40px rgba(255, 77, 109, 0.2); }
+  }
+
+  .progress-bar-container {
+    width: clamp(200px, 30vmin, 400px); height: 2px; background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px; position: relative; overflow: visible;
+  }
+  .progress-bar-fill {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+    background: linear-gradient(90deg, #b3102f, #ff4d6d); border-radius: 2px;
+    box-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d; transition: width 0.1s linear;
+  }
+  .progress-bar-fill::after {
+    content: ""; position: absolute; right: 0; top: 50%; transform: translate(50%, -50%);
+    width: 6px; height: 6px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #fff, 0 0 20px #ff4d6d;
+  }
+
+  /* ================= 场景舞台与氛围层 ================= */
+  #scene {
+    position: relative; width: min(100vw, calc(100vh * 12 / 7)); height: min(100vh, calc(100vw * 7 / 12));
+    overflow: hidden; isolation: isolate; background: linear-gradient(180deg, #0a0304 0%, #1a060a 35%, #2e0810 70%, #140205 100%);
+  }
+
+  .ambient-glow {
+    position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%);
+    width: 80vw; height: 80vw;
+    background: radial-gradient(circle, rgba(255, 40, 80, 0.08) 0%, transparent 60%);
+    z-index: 0; pointer-events: none; animation: breathe 6s ease-in-out infinite alternate;
+  }
+  @keyframes breathe {
+    0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.7; }
+    100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  }
+
+  .sky {
+    position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 60% 50% at 78% 10%, rgba(255, 40, 80, .05), transparent 65%),
+                radial-gradient(ellipse 80% 55% at 18% 100%, rgba(120, 10, 30, .1), transparent 70%);
+  }
+
+  .vignette {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    box-shadow: inset 0 0 20vmin 10vmin rgba(0, 0, 0, 0.8);
+  }
+
+  .stars { position: absolute; inset: 0; z-index: 1; }
+  .stars i {
+    position: absolute; width: var(--sz, 2px); height: var(--sz, 2px); background: #fff; border-radius: 50%;
+    opacity: .2; animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle { 0%, 100% { opacity: .1; } 50% { opacity: .8; box-shadow: 0 0 6px #ff5c7a; } }
+
+  .dust-layer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .dust-layer i {
+    position: absolute; width: 2px; height: 2px; background: #ff8fa3; border-radius: 50%;
+    box-shadow: 0 0 8px #ff4d6d; opacity: 0; animation: driftUp var(--dur, 6s) linear infinite; animation-delay: var(--delay, 0s); bottom: -10px;
+  }
+  @keyframes driftUp {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    20% { opacity: 0.6; }
+    80% { opacity: 0.4; }
+    100% { transform: translateY(-60vh) translateX(20px); opacity: 0; }
+  }
+
+  .fog {
+    position: absolute; left: -12%; right: -12%; bottom: -12%; height: 52%; z-index: 2;
+    background: radial-gradient(ellipse at 50% 100%, rgba(120, 20, 40, .4), transparent 70%);
+    filter: blur(14px); animation: fogMove 14s ease-in-out infinite alternate; pointer-events: none;
+  }
+  @keyframes fogMove { from { transform: translateX(-3%) scaleY(1); } to { transform: translateX(3%) scaleY(1.08); } }
+
+  /* 树枝绘制动画 */
+  .branch {
+    position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none;
+    filter: drop-shadow(0 0 4px rgba(255, 77, 109, 0.2));
+    opacity: 0;
+  }
+  .branch.grow { opacity: 1; }
+  .branch path {
+    stroke-dasharray: 5000;
+    stroke-dashoffset: 5000;
+  }
+  .branch.grow path {
+    animation: drawBranch 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes drawBranch {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .side-decoration {
+    position: absolute; top: 10%; bottom: 10%; width: 40px; z-index: 3; pointer-events: none;
+    border-left: 1px solid rgba(255, 77, 109, 0.15); display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .side-decoration.left { left: 4%; }
+  .side-decoration.right { right: 4%; border-left: none; border-right: 1px solid rgba(255, 77, 109, 0.15); }
+  .side-decoration::before, .side-decoration::after {
+    content: ""; position: absolute; width: 10px; height: 10px; border: 1px solid rgba(255, 77, 109, 0.4);
+  }
+  .side-decoration.left::before { top: 0; left: -5px; border-right: none; border-bottom: none; }
+  .side-decoration.left::after { bottom: 0; left: -5px; border-right: none; border-top: none; }
+  .side-decoration.right::before { top: 0; right: -5px; border-left: none; border-bottom: none; }
+  .side-decoration.right::after { bottom: 0; right: -5px; border-left: none; border-top: none; }
+  .side-decoration span {
+    display: block; font-family: ui-monospace, monospace; font-size: 10px; color: rgba(255, 77, 109, 0.4);
+    letter-spacing: 0.2em; writing-mode: vertical-rl; text-orientation: mixed; transform: translateX(-50%); opacity: 0.8;
+  }
+  .side-decoration.right span { transform: translateX(50%); }
+
+  /* ================= 千纸鹤基础状态 ================= */
+  .bird {
+    --c-main: #ccc; --c-light: #fff; --c-dark: #999; --c-shadow: #333;
+    position: absolute; left: var(--x); top: var(--y-top); width: var(--b-width); z-index: 4;
+    will-change: transform, opacity; transform: translate3d(-50%, -100%, 0); opacity: 0; 
+    filter: drop-shadow(0 0 12px rgba(var(--glow-rgb, 255,50,80), 0.35)) drop-shadow(0 4px 6px rgba(0,0,0,0.9));
+  }
+
+  .bird-flip { transform: scaleX(var(--dir, 1)); transform-origin: 50% 100%; width: 100%; height: 100%; }
+  .bird-svg { display: block; width: 100%; height: auto; overflow: visible; }
+  
+  /* 精准定位前翼的枢轴点（折痕铰链处） */
+  .bird-svg .wing { 
+    transform-box: view-box; 
+    transform-origin: 90px 115px; 
+  }
+
+  .base-glow {
+    position: absolute; left: 50%; bottom: -5%; width: 80%; height: 15px; transform: translateX(-50%);
+    background: radial-gradient(ellipse, rgba(var(--glow-rgb, 255,50,80), 0.4) 0%, transparent 70%);
+    border-radius: 50%; z-index: -1; opacity: 0; transition: opacity 0.8s ease; filter: blur(2px);
+  }
+  .bird.landed .base-glow { opacity: 1; animation: basePulse 3s ease-in-out infinite alternate; }
+  @keyframes basePulse {
+    0% { transform: translateX(-50%) scale(1); opacity: 0.6; }
+    100% { transform: translateX(-50%) scale(1.2); opacity: 1; }
+  }
+
+  .bird.fly { animation: flyIn var(--flyDur, 2.5s) cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  
+  /* 全新的折纸扇动动画：加入阻尼和惯性感 */
+  .bird.fly .bird-svg .wing { 
+    animation: flap 0.9s cubic-bezier(0.4, 0.1, 0.6, 0.9) infinite; 
+  }
+
+  @keyframes flap {
+    0% { transform: rotate(0deg) scaleY(1); }
+    25% { transform: rotate(-20deg) scaleY(0.9); }
+    55% { transform: rotate(-38deg) scaleY(0.75); }
+    80% { transform: rotate(15deg) scaleY(1.1); }
+    100% { transform: rotate(0deg) scaleY(1); }
+  }
+
+  @keyframes flyIn {
+    0% { opacity: 0; transform: translate3d(calc(-50% + var(--start-x, -100vw)), calc(-100% + var(--start-y, -100vh)), 0) scale(0.2) rotate(var(--start-rot, 0deg)); }
+    30% { opacity: 0; }
+    40% { opacity: 1; }
+    100% { opacity: 1; transform: translate3d(-50%, -100%, 0) scale(1) rotate(0deg); }
+  }
+
+  .bird.landed { opacity: 1 !important; transform: translate3d(-50%, -100%, 0) !important; }
+  .bird.landed .bird-svg .wing { animation: none !important; transform: rotate(0deg) scaleY(1) !important; }
+
+  /* ================= 中心引导文字 ================= */
+  .intro-text {
+    position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+    text-align: center; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 1.5s ease;
+    display: flex; flex-direction: column; align-items: center; gap: 0.8em;
+  }
+  .intro-text.show { opacity: 1; }
+  .intro-text::before, .intro-text::after {
+    content: ""; width: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 77, 109, 0.6), transparent);
+    transition: width 1.5s ease 0.5s;
+  }
+  .intro-text.show::before, .intro-text.show::after { width: 200px; }
+  
+  .intro-text .cn {
+    font-family: "Songti SC", "Noto Serif SC", "STSong", serif;
+    font-size: clamp(36px, 6vmin, 80px); color: #f0e6e6; letter-spacing: 0.2em; text-indent: 0.2em;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.25), 0 0 60px rgba(255, 100, 100, 0.2); margin: 0;
+  }
+  .intro-text .en {
+    font-family: ui-monospace, monospace;
+    font-size: clamp(12px, 1.8vmin, 20px); color: #a89a9a; letter-spacing: 0.5em; text-indent: 0.5em; opacity: 0.8; margin: 0;
+  }
+
+  /* ================= 交互按钮 ================= */
+  .tag {
+    position: absolute; left: 50%; bottom: 100%; padding: .6em 1.15em .6em 1.4em;
+    font-family: ui-monospace, SFMono-Regular, "Courier New", monospace;
+    font-size: clamp(12px, 1.8vmin, 18px); letter-spacing: .3em; white-space: nowrap;
+    color: var(--c); background: rgba(10, 2, 4, 0.75); border: 1px solid currentColor; border-radius: 2px;
+    text-shadow: 0 0 12px var(--c); box-shadow: 0 0 20px -6px var(--c), inset 0 0 20px -12px var(--c);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; transform: translate(-50%, -10px) scale(.9); pointer-events: none; z-index: 10;
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(.2,.8,.3,1), box-shadow .3s ease, background .3s ease;
+    overflow: hidden;
+  }
+  .tag::before {
+    content: ""; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transform: skewX(-20deg); transition: left 0.5s ease;
+  }
+  .show-tags .tag:hover::before { left: 150%; }
+  .tag::after {
+    content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 24px;
+    background: linear-gradient(to bottom, currentColor, transparent); transform: translateX(-50%); opacity: .6;
+  }
+  .show-tags .tag { opacity: 1; transform: translate(-50%, -25px) scale(1); pointer-events: auto; }
+  .show-tags .tag:hover { transform: translate(-50%, -30px) scale(1.06); background: rgba(30, 5, 10, 0.9); box-shadow: 0 0 30px -4px var(--c), inset 0 0 24px -10px var(--c); }
+  .show-tags .tag:active { transform: translate(-50%, -28px) scale(.98); }
+  .show-tags .tag[data-target="bitter"], .show-tags .tag[data-target="void"] {
+    opacity: 0.45; background: rgba(10, 2, 4, 0.4); text-shadow: 0 0 6px var(--c); 
+    box-shadow: 0 0 12px -8px var(--c), inset 0 0 10px -12px var(--c); 
+  }
+  .show-tags .tag[data-target="bitter"]:hover, .show-tags .tag[data-target="void"]:hover {
+    opacity: 0.9; background: rgba(30, 5, 10, 0.8); text-shadow: 0 0 10px var(--c); box-shadow: 0 0 20px -6px var(--c);
+  }
+  .show-tags .tag[data-target="sick"] { box-shadow: 0 0 25px -5px var(--c), inset 0 0 20px -10px var(--c); }
+
+  /* =================  whispers 浮现文字层 ================= */
+  .whisper-layer {
+    position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+    background: rgba(5, 1, 2, 0.5); /* 稍微加深一点背景，配合模糊 */
+    backdrop-filter: blur(12px); /* 高斯模糊背后的界面 */
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0.6s;
+    pointer-events: none;
+  }
+  .whisper-layer.show { opacity: 1; visibility: visible; }
+  
+  .whisper-text {
+    font-family: "Songti SC", "Noto Serif SC", "STSong", serif;
+    font-size: clamp(28px, 4.5vmin, 48px); /* 放大字号 */
+    font-weight: 500;
+    color: #f0e6e6; letter-spacing: 0.15em;
+    text-shadow: 0 0 30px rgba(255, 77, 109, 0.8), 0 0 60px rgba(255, 77, 109, 0.4); /* 增强光晕 */
+    opacity: 0; transform: translateY(20px) scale(0.95); /* 增加轻微的缩放浮现 */
+    transition: opacity 1s ease, transform 1s cubic-bezier(0.2, 0.8, 0.3, 1);
+    padding: 0 2em; text-align: center; line-height: 1.6;
+  }
+  .whisper-layer.show .whisper-text {
+    opacity: 1; transform: translateY(0) scale(1);
+  }
+
+  /* ================= 全屏界面 ================= */
+  .screen {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 8vmin;
+    text-align: center; color: var(--c);
+    background: radial-gradient(circle at 50% 24%, rgba(255, 255, 255, .05), transparent 55%), radial-gradient(circle at 50% 50%, rgba(15, 4, 6, .95), rgba(5, 1, 2, .99) 72%);
+    backdrop-filter: blur(16px) saturate(.85); -webkit-backdrop-filter: blur(16px) saturate(.85);
+    opacity: 0; visibility: hidden; transition: opacity .65s ease, visibility .65s;
+  }
+  .screen.show { opacity: 1; visibility: visible; }
+
+  #screen-sick   { --c: #ff4d6d; --glow: rgba(255, 50, 90, .5); }
+  #screen-bitter { --c: #4d9fff; --glow: rgba(77, 159, 255, .5); }
+  #screen-void   { --c: #c98eff; --glow: rgba(201, 142, 255, .5); }
+
+  .screen-inner { max-width: 40em; }
+  .screen-inner > * { opacity: 0; transform: translateY(26px); }
+
+  .screen .kicker { margin: 0 0 1.6em; font-family: ui-monospace, monospace; font-size: clamp(10px, 1.5vmin, 14px); letter-spacing: .5em; text-indent: .5em; opacity: .6; }
+  .screen h1 {
+    margin: 0 0 .12em; font-family: "Songti SC", "Noto Serif SC", "STSong", serif;
+    font-size: clamp(40px, 9.5vmin, 100px); font-weight: 500; letter-spacing: .18em; text-indent: .18em;
+    text-shadow: 0 0 26px var(--glow), 0 0 80px var(--glow);
+  }
+  .screen .en { margin: 0 0 2.6em; font-family: ui-monospace, monospace; font-size: clamp(9px, 1.35vmin, 13px); letter-spacing: .6em; text-indent: .6em; opacity: .45; }
+  .screen .desc { max-width: 30em; margin: 0 auto 3.2em; font-size: clamp(13px, 1.85vmin, 17px); font-weight: 300; line-height: 2.15; letter-spacing: .07em; white-space: pre-line; opacity: .85; }
+
+  .button-group { display: flex; justify-content: center; gap: 1.5em; margin-top: 1em; }
+  .screen .back, .screen .explore {
+    padding: .95em 2em; font-family: ui-monospace, monospace; font-size: clamp(10px, 1.4vmin, 14px);
+    letter-spacing: .34em; text-indent: .34em; color: var(--c); border: 1px solid currentColor; border-radius: 2px;
+    opacity: .55; transition: opacity .3s, background .3s, box-shadow .3s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .screen .explore { opacity: 0.85; background: rgba(255, 255, 255, 0.05); }
+  .screen .back:hover, .screen .explore:hover { opacity: 1; background: rgba(255, 255, 255, .1); box-shadow: 0 0 26px -6px var(--c); }
+
+  .screen.show .screen-inner > * { animation: riseIn .9s cubic-bezier(.16,.8,.3,1) forwards; }
+  .screen.show .kicker { animation-delay: .12s; }
+  .screen.show h1      { animation-delay: .22s; }
+  .screen.show .en     { animation-delay: .34s; }
+  .screen.show .desc   { animation-delay: .46s; }
+  .screen.show .button-group { animation-delay: .64s; }
+  @keyframes riseIn { to { opacity: 1; transform: none; } }
+
+  /* ================= 病恋专属抛弃弹窗 ================= */
+  .abandon-modal {
+    position: fixed; inset: 0; z-index: 150; display: grid; place-items: center;
+    background: rgba(5, 1, 2, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s;
+  }
+  .abandon-modal.show { opacity: 1; visibility: visible; }
+
+  .abandon-content {
+    position: relative; width: min(90vw, 380px); background: rgba(20, 5, 8, 0.95);
+    border: 1px solid rgba(255, 77, 109, 0.4); box-shadow: 0 0 40px rgba(255, 77, 109, 0.15), inset 0 0 30px rgba(255, 77, 109, 0.05);
+    padding: 2.5em 2em; text-align: center;
+    transform: scale(0.9) translateY(10px); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.3, 1.1);
+  }
+  .abandon-modal.show .abandon-content { transform: scale(1) translateY(0); }
+  
+  .abandon-content::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #ff4d6d, transparent);
+  }
+
+  .abandon-text {
+    font-family: "Songti SC", "Noto Serif SC", "STSong", serif;
+    font-size: clamp(20px, 3vmin, 26px); color: #f0e6e6; letter-spacing: 0.15em;
+    margin-bottom: 2em; text-shadow: 0 0 15px rgba(255, 77, 109, 0.4);
+  }
+
+  .abandon-actions { display: flex; gap: 1em; justify-content: center; }
+  
+  .abandon-btn {
+    flex: 1; padding: 0.8em 1em; font-family: ui-monospace, monospace;
+    font-size: clamp(11px, 1.4vmin, 14px); letter-spacing: 0.2em; border-radius: 2px;
+    transition: all 0.3s; cursor: pointer;
+  }
+  
+  .btn-stay {
+    color: #a89a9a; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.02);
+  }
+  .btn-stay:hover { background: rgba(255, 255, 255, 0.08); color: #f0e6e6; border-color: rgba(255, 255, 255, 0.4); }
+  
+  .btn-leave {
+    color: #ff4d6d; border: 1px solid rgba(255, 77, 109, 0.4); background: rgba(255, 77, 109, 0.05);
+  }
+  .btn-leave:hover { background: rgba(255, 77, 109, 0.15); box-shadow: 0 0 20px -5px #ff4d6d; }
+
+  /* ================= 纸鹤解体动画层 ================= */
+  .unfold-layer {
+    position: fixed; inset: 0; z-index: 150; display: grid; place-items: center;
+    background: rgba(5, 1, 2, 0.85); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s;
+  }
+  .unfold-layer.active { opacity: 1; visibility: visible; }
+
+  .unfold-svg-container {
+    width: min(60vmin, 400px); height: min(60vmin, 400px); position: relative;
+    transform: scale(0.8); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.1);
+  }
+  .unfold-layer.active .unfold-svg-container { transform: scale(1); }
+  .unfold-layer svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 20px rgba(255, 77, 109, 0.5)); }
+
+  .unfold-layer .part { transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 1s ease-in; }
+  .unfold-layer.scatter .part-tail { transform: translate(-150px, 120px) rotate(-45deg) scale(0.6); opacity: 0; }
+  .unfold-layer.scatter .part-back-wing { transform: translate(120px, -100px) rotate(35deg) scale(0.6); opacity: 0; }
+  .unfold-layer.scatter .part-body { transform: translate(0px, 150px) rotate(15deg) scale(0.6); opacity: 0; }
+  .unfold-layer.scatter .part-head { transform: translate(160px, 60px) rotate(50deg) scale(0.6); opacity: 0; }
+  .unfold-layer.scatter .part-front-wing { transform: translate(-130px, -140px) rotate(-60deg) scale(0.6); opacity: 0; }
+
+  /* ================= 档案弹窗 & 子页面 & 须知 ================= */
+  .archive-modal, .notice-modal, .subpage-modal {
+    position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+    background: rgba(5, 1, 2, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s;
+  }
+  .notice-modal, .subpage-modal { z-index: 300; background: rgba(5, 1, 2, 0.95); }
+  
+  .archive-modal.show, .notice-modal.show, .subpage-modal.show { opacity: 1; visibility: visible; }
+
+  .archive-content, .notice-content, .subpage-content {
+    position: relative; width: min(92vw, 680px); background: rgba(15, 4, 6, 0.95);
+    border: 1px solid rgba(255, 77, 109, 0.3); box-shadow: 0 0 50px rgba(255, 77, 109, 0.15), inset 0 0 60px rgba(255, 77, 109, 0.05);
+    padding: 3em 2.5em; transform: scale(0.95) translateY(10px); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.1);
+    background-image: linear-gradient(rgba(255, 77, 109, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 77, 109, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .notice-content, .subpage-content { width: min(92vw, 600px); max-height: 85vh; display: flex; flex-direction: column; }
+  
+  .archive-modal.show .archive-content, .notice-modal.show .notice-content, .subpage-modal.show .subpage-content { transform: scale(1) translateY(0); }
+  
+  .archive-content::before, .notice-content::before, .subpage-content::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #ff4d6d, transparent);
+  }
+
+  .archive-header, .notice-header, .subpage-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 1px solid rgba(255, 77, 109, 0.2); padding-bottom: 1em; margin-bottom: 2em;
+  }
+  .archive-header h2, .notice-header h2, .subpage-header h2 {
+    margin: 0; font-family: "Songti SC", "Noto Serif SC", "STSong", serif;
+    color: #ff4d6d; font-size: clamp(28px, 4.5vmin, 36px); letter-spacing: 0.15em; text-shadow: 0 0 15px rgba(255, 77, 109, 0.5);
+  }
+  .archive-code { font-family: ui-monospace, monospace; font-size: 11px; color: rgba(255, 77, 109, 0.5); letter-spacing: 0.1em; }
+
+  .archive-content {
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0; 
+  }
+  .archive-header {
+    padding: 3em 2.5em 1em;
+    margin-bottom: 0;
+  }
+  .archive-body-scroll {
+    padding: 0 2.5em;
+    overflow-y: auto;
+    flex-grow: 1;
+  }
+  .archive-body-scroll::-webkit-scrollbar { width: 4px; }
+  .archive-body-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+  .archive-body-scroll::-webkit-scrollbar-thumb { background: rgba(255, 77, 109, 0.5); border-radius: 2px; }
+  .archive-body-scroll::-webkit-scrollbar-thumb:hover { background: #ff4d6d; }
+
+  .archive-layout { display: flex; gap: 2.5em; align-items: flex-start; padding-bottom: 2em; }
+  
+  .archive-visual {
+    flex-shrink: 0; width: 160px; height: 160px; position: relative;
+    display: flex; justify-content: center; align-items: center;
+  }
+  .cyber-eye {
+    width: 80px; height: 80px; border: 2px solid rgba(255, 77, 109, 0.6); border-radius: 50%; position: relative;
+    box-shadow: 0 0 20px rgba(255, 77, 109, 0.2), inset 0 0 20px rgba(255, 77, 109, 0.2);
+  }
+  .cyber-eye::before {
+    content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 30px; height: 30px; background: #ff4d6d; border-radius: 50%; box-shadow: 0 0 20px #ff4d6d;
+  }
+  .cyber-eye::after {
+    content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 110px; height: 110px; border: 1px dashed rgba(255, 77, 109, 0.3);
+    border-radius: 50%; animation: spinOrnament 10s linear infinite;
+  }
+  .orbit-ring {
+    position: absolute; width: 140px; height: 140px; border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%; border-top-color: #ff4d6d; border-bottom-color: #ff4d6d;
+    animation: spinOrnament 15s linear infinite reverse;
+  }
+
+  .archive-info { flex-grow: 1; display: flex; flex-direction: column; gap: 1.5em; text-align: left; }
+  .profile-head { display: flex; flex-direction: column; gap: 0.5em; }
+  .profile-name {
+    font-size: clamp(26px, 4vmin, 36px); color: #f0e6e6; font-weight: 500;
+    letter-spacing: 0.2em; text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+  }
+  .profile-tags { display: flex; gap: 1em; font-family: ui-monospace, monospace; font-size: 13px; color: #a89a9a; letter-spacing: 0.1em; }
+  .profile-tags span { border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.1em 0.6em; border-radius: 2px; background: rgba(255,255,255,0.02);}
+
+  .data-block { display: flex; flex-direction: column; gap: 0.8em; }
+  .data-label {
+    font-family: ui-monospace, monospace; font-size: 12px; color: #ff4d6d;
+    letter-spacing: 0.2em; opacity: 0.8; display: flex; align-items: center; gap: 0.5em;
+  }
+  .data-label::after { content: ""; flex-grow: 1; height: 1px; background: rgba(255, 77, 109, 0.2); }
+  .style-list { display: flex; flex-wrap: wrap; gap: 0.6em; }
+  .style-item {
+    font-size: 13px; color: #d0c0c0; background: rgba(255, 77, 109, 0.08);
+    padding: 0.3em 0.8em; border-radius: 2px; border: 1px solid rgba(255, 77, 109, 0.15);
+    letter-spacing: 0.05em; font-family: ui-monospace, monospace;
+  }
+
+  .price-panel {
+    margin-top: 0.5em; display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255, 255, 255, 0.03); padding: 1em 1.2em; border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.08); border-left: 3px solid #ff4d6d;
+  }
+  .price-label { font-family: ui-monospace, monospace; font-size: 12px; color: #a89a9a; letter-spacing: 0.1em; }
+  .price-values { display: flex; gap: 1.5em; }
+  .price-item { font-family: ui-monospace, monospace; font-size: 18px; color: #ff4d6d; font-weight: 600; }
+  .price-item span { font-size: 12px; color: #a89a9a; font-weight: 400; margin-left: 2px; }
+
+  .archive-actions {
+    padding: 1.5em 2.5em 2.5em;
+    border-top: 1px solid rgba(255, 77, 109, 0.1);
+    background: rgba(15, 4, 6, 0.98);
+    display: flex; flex-direction: column; gap: 1em;
+    border-bottom-left-radius: 2px; border-bottom-right-radius: 2px;
+  }
+  .action-row { display: flex; gap: 1em; }
+  .btn-base, .btn-nav {
+    flex: 1; padding: .9em 1em; font-family: ui-monospace, monospace; font-size: clamp(10px, 1.3vmin, 13px);
+    letter-spacing: 0.3em; border-radius: 2px; transition: all 0.3s; text-align: center;
+  }
+  .btn-nav {
+    color: #ff4d6d; border: 1px solid rgba(255, 77, 109, 0.3); background: rgba(255, 77, 109, 0.05);
+    text-decoration: none; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .btn-nav:hover { background: rgba(255, 77, 109, 0.15); border-color: #ff4d6d; box-shadow: 0 0 20px -5px #ff4d6d; }
+  
+  .btn-notice { color: #f0e6e6; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); }
+  .btn-notice:hover { background: rgba(255, 255, 255, 0.1); border-color: #fff; box-shadow: 0 0 20px -5px #fff; }
+  
+  .btn-close { color: #ff4d6d; border: 1px solid rgba(255, 77, 109, 0.4); background: none; }
+  .btn-close:hover { background: rgba(255, 77, 109, 0.1); border-color: #ff4d6d; box-shadow: 0 0 20px -5px #ff4d6d; }
+
+  .subpage-body {
+    flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 200px; text-align: center; padding: 2em 0;
+  }
+  .subpage-icon {
+    width: 40px; height: 40px; border: 2px dashed rgba(255, 77, 109, 0.4); border-radius: 50%;
+    margin-bottom: 1.5em; animation: spinOrnament 20s linear infinite;
+  }
+  .subpage-text {
+    font-family: "Songti SC", "Noto Serif SC", "STSong", serif;
+    font-size: clamp(16px, 2.5vmin, 22px); color: #a89a9a; letter-spacing: 0.1em; line-height: 1.8;
+  }
+  .subpage-en {
+    font-family: ui-monospace, monospace; font-size: 11px; color: rgba(255, 77, 109, 0.5);
+    letter-spacing: 0.3em; margin-top: 1em;
+  }
+
+  .notice-body {
+    flex-grow: 1; overflow-y: auto; padding-right: 1em; text-align: left;
+    font-size: clamp(13px, 1.7vmin, 15px); line-height: 1.8; color: #d0c0c0;
+  }
+  .notice-body p { margin: 0 0 0.8em 0; position: relative; padding-left: 1em; }
+  .notice-body p::before { content: "·"; position: absolute; left: 0; color: #ff4d6d; font-weight: bold; }
+  .notice-body .highlight { color: #ff4d6d; font-weight: 500; }
+  .notice-body .end-mark { text-align: center; color: #ff4d6d; font-family: ui-monospace, monospace; letter-spacing: 0.2em; margin-top: 2em; }
+
+  .notice-body::-webkit-scrollbar { width: 4px; }
+  .notice-body::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+  .notice-body::-webkit-scrollbar-thumb { background: rgba(255, 77, 109, 0.5); border-radius: 2px; }
+  .notice-body::-webkit-scrollbar-thumb:hover { background: #ff4d6d; }
+
+  @media (max-width: 600px) {
+    .archive-layout { flex-direction: column; align-items: center; }
+    .archive-visual { margin-bottom: 1em; }
+    .archive-info { width: 100%; }
+    .price-panel { flex-direction: column; gap: 0.8em; align-items: flex-start; }
+    .action-row { flex-direction: column; }
+    .side-decoration { display: none; }
+  }
+
+  /* ================= 自定义 MP3 播放器按钮样式 ================= */
+  #music-btn {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(20, 5, 8, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 77, 109, 0.4);
+    color: #ff4d6d;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 9999;
+    box-shadow: 0 0 20px rgba(255, 77, 109, 0.15);
+    transition: all 0.3s ease;
+  }
+  #music-btn:hover {
+    background: rgba(30, 8, 12, 0.95);
+    border-color: #ff4d6d;
+    box-shadow: 0 0 25px rgba(255, 77, 109, 0.4);
+    transform: scale(1.05);
+  }
+  #music-btn.playing svg {
+    animation: spin 4s linear infinite;
+  }
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= MP3 背景音乐播放器 ================= -->
+<!-- 这里的 src 替换成你的 mp3 路径或链接。如果是本地文件，请将 bgm.mp3 放在与此文件同目录下 -->
+<audio id="bgm" src="./bgm.mp3" loop></audio>
+
+<!-- 自定义的极简音乐按钮 -->
+<button id="music-btn" title="播放/暂停背景音乐">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+    <!-- 初始为播放图标 -->
+    <path id="music-icon" d="M8 5v14l11-7z"/>
+  </svg>
+</button>
+
+<!-- 加载界面 -->
+<div id="loading-screen">
+  <div class="load-ornament"></div>
+  <div class="load-particles" id="loadParticles"></div>
+  <div class="shockwave" id="shockwave"></div>
+  
+  <div class="loading-content">
+    <div class="loading-text" id="loadingText">资料加载中</div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+  </div>
+</div>
+
+<div id="scene">
+  <div class="ambient-glow"></div>
+  <div class="sky"></div>
+  <div class="stars" id="stars"></div>
+  <div class="dust-layer" id="dustLayer"></div>
+  <div class="fog"></div>
+  
+  <div class="side-decoration left"><span>SYS.RECOVERY</span></div>
+  <div class="side-decoration right"><span>CRANE_PROTOCOL</span></div>
+
+  <div class="vignette"></div>
+
+  <svg class="branch" id="branch" viewBox="0 0 1200 700" aria-hidden="true">
+    <g stroke="#1a0a0c" fill="none" stroke-linecap="round">
+      <path d="M-30 620 C140 585 260 540 400 500 C560 455 650 435 790 395 C920 358 1020 330 1160 290" stroke-width="26"/>
+      <path d="M400 500 C378 456 350 426 316 392" stroke-width="13"/>
+      <path d="M316 392 C298 372 288 356 280 330" stroke-width="7"/>
+      <path d="M316 392 C330 370 340 340 350 310" stroke-width="5"/>
+      <path d="M350 310 C355 295 365 285 375 280" stroke-width="3"/>
+      <path d="M280 330 C270 315 260 305 245 300" stroke-width="4"/>
+      <path d="M692 422 C670 386 648 358 614 328" stroke-width="11"/>
+      <path d="M614 328 C596 310 588 294 584 274" stroke-width="6"/>
+      <path d="M614 328 C635 310 650 290 660 265" stroke-width="5"/>
+      <path d="M584 274 C575 260 560 250 540 245" stroke-width="3"/>
+      <path d="M760 400 C772 420 778 440 776 462" stroke-width="8"/>
+      <path d="M776 462 C770 480 760 490 745 500" stroke-width="4"/>
+      <path d="M936 354 C958 316 978 292 1008 264" stroke-width="11"/>
+      <path d="M1008 264 C1022 248 1034 240 1052 234" stroke-width="6"/>
+      <path d="M1008 264 C990 240 975 225 955 215" stroke-width="5"/>
+      <path d="M955 215 C945 205 930 200 915 198" stroke-width="3"/>
+      <path d="M100 592 C96 612 92 630 84 648" stroke-width="8"/>
+      <path d="M84 648 C75 660 60 670 40 675" stroke-width="4"/>
+      <path d="M200 565 C210 585 215 600 210 620" stroke-width="6"/>
+      <path d="M550 455 C540 480 530 500 515 520" stroke-width="7"/>
+      <path d="M515 520 C505 535 490 545 475 550" stroke-width="4"/>
+    </g>
+  </svg>
+
+  <!-- 千纸鹤 1（左侧，幽蓝） -->
+  <div class="bird" style="--x:28.33%; --y-top: calc(72.14% - 1.5%); --b-width: 13.5%; --c:#3a6d8c; --glow-rgb: 42, 79, 99; --dir:-1; --start-x:-100vw; --start-y:-80vh; --start-rot:-15deg; --c-main:#2a4f63; --c-light:#4d7b94; --c-dark:#142c38; --c-shadow:#08151c;">
+    <div class="bird-flip">
+      <svg class="bird-svg" viewBox="0 0 200 200" aria-hidden="true">
+        <g class="back-wing">
+          <polygon points="100,90 160,20 140,80" fill="var(--c-dark)"/>
+          <polygon points="100,90 160,20 110,50" fill="var(--c-light)" opacity="0.3"/>
+        </g>
+        <g class="tail">
+          <polygon points="100,90 180,150 140,120" fill="var(--c-main)"/>
+          <polygon points="140,120 180,150 160,170" fill="var(--c-shadow)"/>
+        </g>
+        <g class="body">
+          <polygon points="80,60 100,90 100,130" fill="var(--c-main)"/>
+          <polygon points="80,60 100,130 85,100" fill="var(--c-light)" opacity="0.2"/>
+          <polygon points="100,90 140,120 100,130" fill="var(--c-dark)"/>
+        </g>
+        <g class="head">
+          <polygon points="80,60 85,100 60,80" fill="var(--c-main)"/>
+          <polygon points="80,60 60,80 40,50" fill="var(--c-light)" opacity="0.4"/>
+          <polygon points="80,60 40,50 20,70" fill="var(--c-main)"/>
+          <polygon points="40,50 40,70 20,70" fill="var(--c-dark)"/>
+        </g>
+        <g class="wing">
+          <polygon points="85,100 100,130 40,170" fill="var(--c-main)"/>
+          <polygon points="85,100 40,170 60,130" fill="var(--c-light)" opacity="0.5"/>
+          <polygon points="100,130 40,170 80,150" fill="var(--c-dark)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="base-glow"></div>
+    <button class="tag" data-target="bitter">虐恋</button>
+  </div>
+
+  <!-- 千纸鹤 2（中间，血红） -->
+  <div class="bird" style="--x:50%; --y-top: calc(61.86% - 2%); --b-width: 17%; --c:#e62e4f; --glow-rgb: 217, 32, 60; --dir:1; --start-x:80vw; --start-y:60vh; --start-rot:10deg; --c-main:#d9203c; --c-light:#f25c79; --c-dark:#800b1e; --c-shadow:#3b030b;">
+    <div class="bird-flip">
+      <svg class="bird-svg" viewBox="0 0 200 200" aria-hidden="true">
+        <g class="back-wing">
+          <polygon points="100,90 160,20 140,80" fill="var(--c-dark)"/>
+          <polygon points="100,90 160,20 110,50" fill="var(--c-light)" opacity="0.3"/>
+        </g>
+        <g class="tail">
+          <polygon points="100,90 180,150 140,120" fill="var(--c-main)"/>
+          <polygon points="140,120 180,150 160,170" fill="var(--c-shadow)"/>
+        </g>
+        <g class="body">
+          <polygon points="80,60 100,90 100,130" fill="var(--c-main)"/>
+          <polygon points="80,60 100,130 85,100" fill="var(--c-light)" opacity="0.2"/>
+          <polygon points="100,90 140,120 100,130" fill="var(--c-dark)"/>
+        </g>
+        <g class="head">
+          <polygon points="80,60 85,100 60,80" fill="var(--c-main)"/>
+          <polygon points="80,60 60,80 40,50" fill="var(--c-light)" opacity="0.4"/>
+          <polygon points="80,60 40,50 20,70" fill="var(--c-main)"/>
+          <polygon points="40,50 40,70 20,70" fill="var(--c-dark)"/>
+        </g>
+        <g class="wing">
+          <polygon points="85,100 100,130 40,170" fill="var(--c-main)"/>
+          <polygon points="85,100 40,170 60,130" fill="var(--c-light)" opacity="0.5"/>
+          <polygon points="100,130 40,170 80,150" fill="var(--c-dark)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="base-glow"></div>
+    <button class="tag" data-target="sick">病恋</button>
+  </div>
+
+  <!-- 千纸鹤 3（右侧，幻紫） -->
+  <div class="bird" style="--x:73.33%; --y-top: calc(50.71% - 1.5%); --b-width: 13.5%; --c:#6d4696; --glow-rgb: 94, 59, 130; --dir:1; --start-x:100vw; --start-y:-40vh; --start-rot:15deg; --c-main:#5e3b82; --c-light:#8662b0; --c-dark:#371a52; --c-shadow:#190a28;">
+    <div class="bird-flip">
+      <svg class="bird-svg" viewBox="0 0 200 200" aria-hidden="true">
+        <g class="back-wing">
+          <polygon points="100,90 160,20 140,80" fill="var(--c-dark)"/>
+          <polygon points="100,90 160,20 110,50" fill="var(--c-light)" opacity="0.3"/>
+        </g>
+        <g class="tail">
+          <polygon points="100,90 180,150 140,120" fill="var(--c-main)"/>
+          <polygon points="140,120 180,150 160,170" fill="var(--c-shadow)"/>
+        </g>
+        <g class="body">
+          <polygon points="80,60 100,90 100,130" fill="var(--c-main)"/>
+          <polygon points="80,60 100,130 85,100" fill="var(--c-light)" opacity="0.2"/>
+          <polygon points="100,90 140,120 100,130" fill="var(--c-dark)"/>
+        </g>
+        <g class="head">
+          <polygon points="80,60 85,100 60,80" fill="var(--c-main)"/>
+          <polygon points="80,60 60,80 40,50" fill="var(--c-light)" opacity="0.4"/>
+          <polygon points="80,60 40,50 20,70" fill="var(--c-main)"/>
+          <polygon points="40,50 40,70 20,70" fill="var(--c-dark)"/>
+        </g>
+        <g class="wing">
+          <polygon points="85,100 100,130 40,170" fill="var(--c-main)"/>
+          <polygon points="85,100 40,170 60,130" fill="var(--c-light)" opacity="0.5"/>
+          <polygon points="100,130 40,170 80,150" fill="var(--c-dark)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="base-glow"></div>
+    <button class="tag" data-target="void">虚恋</button>
+  </div>
+
+  <div class="intro-text" id="introText">
+    <div class="cn">请选择你的纸鹤</div>
+    <div class="en">CHOOSE YOUR PAPER CRANE</div>
+  </div>
+
+</div>
+
+<!-- ================= 浮现文字层 ================= -->
+<div class="whisper-layer" id="whisperLayer">
+  <div class="whisper-text" id="whisperText"></div>
+</div>
+
+<!-- ================= 三个全屏界面 ================= -->
+
+<!-- 病恋界面 -->
+<section class="screen" id="screen-sick">
+  <div class="screen-inner">
+    <p class="kicker">01 — 病 恋</p>
+    <h1>病恋</h1>
+    <p class="en">SICK LOVE</p>
+    <p class="desc">爱是一己私欲
+过分些也符合情理</p>
+    <div class="button-group">
+      <button class="back" id="btnBackSick">返 回 枝 头</button>
+      <button class="explore" id="btnOpenSick">打 开 看 看</button>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="screen-bitter">
+  <div class="screen-inner">
+    <p class="kicker">02 — 虐 恋</p>
+    <h1>虐恋</h1>
+    <p class="en">BITTER LOVE</p>
+    <p class="desc">我们吞噬了太多意义，
+其实生命只需要呼吸</p>
+    <button class="back">返 回 枝 头</button>
+  </div>
+</section>
+
+<section class="screen" id="screen-void">
+  <div class="screen-inner">
+    <p class="kicker">03 — 虚 恋</p>
+    <h1>虚恋</h1>
+    <p class="en">PHANTOM LOVE</p>
+    <p class="desc">风很温柔，
+花很浪漫，
+你很特别。</p>
+    <button class="back">返 回 枝 头</button>
+  </div>
+</section>
+
+<!-- ================= 病恋专属抛弃弹窗 ================= -->
+<div class="abandon-modal" id="abandonModal">
+  <div class="abandon-content">
+    <div class="abandon-text">你要抛弃我吗</div>
+    <div class="abandon-actions">
+      <button class="abandon-btn btn-stay" id="btnStay">再看看</button>
+      <button class="abandon-btn btn-leave" id="btnLeave">离开</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 纸鹤解体动画层 ================= -->
+<div class="unfold-layer" id="unfoldLayer">
+  <div class="unfold-svg-container">
+    <svg viewBox="0 0 200 200" aria-hidden="true" style="--c-main:#d9203c; --c-light:#f25c79; --c-dark:#800b1e; --c-shadow:#3b030b;">
+      <g class="part part-back-wing">
+        <polygon points="100,90 160,20 140,80" fill="var(--c-dark)"/>
+        <polygon points="100,90 160,20 110,50" fill="var(--c-light)" opacity="0.3"/>
+      </g>
+      <g class="part part-tail">
+        <polygon points="100,90 180,150 140,120" fill="var(--c-main)"/>
+        <polygon points="140,120 180,150 160,170" fill="var(--c-shadow)"/>
+      </g>
+      <g class="part part-body">
+        <polygon points="80,60 100,90 100,130" fill="var(--c-main)"/>
+        <polygon points="80,60 100,130 85,100" fill="var(--c-light)" opacity="0.2"/>
+        <polygon points="100,90 140,120 100,130" fill="var(--c-dark)"/>
+      </g>
+      <g class="part part-head">
+        <polygon points="80,60 85,100 60,80" fill="var(--c-main)"/>
+        <polygon points="80,60 60,80 40,50" fill="var(--c-light)" opacity="0.4"/>
+        <polygon points="80,60 40,50 20,70" fill="var(--c-main)"/>
+        <polygon points="40,50 40,70 20,70" fill="var(--c-dark)"/>
+      </g>
+      <g class="part part-front-wing">
+        <polygon points="85,100 100,130 40,170" fill="var(--c-main)"/>
+        <polygon points="85,100 40,170 60,130" fill="var(--c-light)" opacity="0.5"/>
+        <polygon points="100,130 40,170 80,150" fill="var(--c-dark)"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- ================= 档案弹窗 ================= -->
+<div class="archive-modal" id="archiveModal">
+  <div class="archive-content">
+    <div class="archive-header">
+      <h2>档案</h2>
+      <span class="archive-code">NO. SICK-01</span>
+    </div>
+    
+    <div class="archive-body-scroll">
+      <div class="archive-layout">
+        <div class="archive-visual">
+          <div class="orbit-ring"></div>
+          <div class="cyber-eye"></div>
+        </div>
+
+        <div class="archive-info">
+          <div class="profile-head">
+            <div class="profile-name">祟 灵</div>
+            <div class="profile-tags">
+              <span>泛</span>
+              <span>ENTP</span>
+            </div>
+          </div>
+
+          <div class="data-block">
+            <div class="data-label">主风格</div>
+            <div class="style-list">
+              <span class="style-item">低无  逻辑  诡辩</span>
+              <span class="style-item">温高  微文  平权</span>
+            </div>
+          </div>
+
+          <div class="data-block">
+            <div class="data-label">副风格</div>
+            <div class="style-list">
+              <span class="style-item">高恋  疯病  血暴</span>
+              <span class="style-item">伪高  下位  小狗文学</span>
+              <span class="style-item">低无  剖析  黑骑士</span>
+            </div>
+          </div>
+
+          <div class="price-panel">
+            <span class="price-label">资费标准</span>
+            <div class="price-values">
+              <span class="price-item">15<span>/0.5h</span></span>
+              <span class="price-item">30<span>/h</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="archive-actions">
+      <div class="action-row">
+        <button class="btn-nav" id="btnBoard">板 评</button>
+        <button class="btn-nav" id="btnScripts">话 术</button>
+        <button class="btn-nav" id="btnCards">卡 类</button>
+      </div>
+      <div class="action-row">
+        <button class="btn-base btn-notice" id="btnNotice">须 知</button>
+        <button class="btn-base btn-close" id="btnCloseArchive">关 闭 档 案</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 新增：板评子界面 ================= -->
+<div class="subpage-modal" id="subpage-board">
+  <div class="subpage-content">
+    <div class="subpage-header">
+      <h2>板评</h2>
+      <span class="archive-code">BOARD REVIEW</span>
+    </div>
+    <div class="subpage-body">
+      <div class="subpage-icon"></div>
+      <div class="subpage-text">这里本该记录着过往的回声，<br>但纸张已被撕毁，只剩下空白的扉页。</div>
+      <div class="subpage-en">DATA CORRUPTED / TEMPORARILY EMPTY</div>
+    </div>
+    <button class="btn-base btn-close" id="btnCloseBoard" style="margin-top: 1.5em; flex: none;">返 回 档 案</button>
+  </div>
+</div>
+
+<!-- ================= 新增：话术子界面 ================= -->
+<div class="subpage-modal" id="subpage-scripts">
+  <div class="subpage-content">
+    <div class="subpage-header">
+      <h2>话术</h2>
+      <span class="archive-code">SCRIPTS</span>
+    </div>
+    <div class="subpage-body">
+      <div class="subpage-icon"></div>
+      <div class="subpage-text">诡辩的线索在逻辑中迷失，<br>抽屉里空无一物，等待被重新填满。</div>
+      <div class="subpage-en">NO RECORDS FOUND / AWAITING INPUT</div>
+    </div>
+    <button class="btn-base btn-close" id="btnCloseScripts" style="margin-top: 1.5em; flex: none;">返 回 档 案</button>
+  </div>
+</div>
+
+<!-- ================= 新增：卡类子界面 ================= -->
+<div class="subpage-modal" id="subpage-cards">
+  <div class="subpage-content">
+    <div class="subpage-header">
+      <h2>卡类</h2>
+      <span class="archive-code">CARDS</span>
+    </div>
+    <div class="subpage-body">
+      <div class="subpage-icon"></div>
+      <div class="subpage-text">数据损坏，卡牌尚未被印制。<br>如果你看到了这里，说明你足够好奇。</div>
+      <div class="subpage-en">ARCHIVE EMPTY / UNDER CONSTRUCTION</div>
+    </div>
+    <button class="btn-base btn-close" id="btnCloseCards" style="margin-top: 1.5em; flex: none;">返 回 档 案</button>
+  </div>
+</div>
+
+<!-- ================= 须知弹窗 ================= -->
+<div class="notice-modal" id="noticeModal">
+  <div class="notice-content">
+    <div class="notice-header">
+      <h2>须知</h2>
+      <span class="archive-code">RULES</span>
+    </div>
+    
+    <div class="notice-body">
+      <p>单内不默认恋人请提前说明</p>
+      <p>未经说明踩雷概不负责请向我提前说明</p>
+      <p>本人风格不稳固 发现自己跑偏且板位回复欲低迷会主动退单</p>
+      <p><span class="highlight">拒男板</span> 下单默认送单</p>
+      <p>单口不提前说明时间减半</p>
+      <p>拼刺刀/互病/修罗场望提前说明</p>
+      <p>拒 辱骂贬低/看乐子/抽象/黄黑脸 请尊重我</p>
+      <p>单内禁直播，录屏 自留截屏请提前说明 禁传播</p>
+      <p>如在单内感到不适 请说安全词<span class="highlight">“我不舒服”</span>我会停止或调整节奏</p>
+      
+      <div style="height: 1em;"></div>
+      
+      <p><span class="highlight">0.5h</span> 10min内支持全额退单</p>
+      <p><span class="highlight">1h</span> 为15min内</p>
+      <p>过以上时间则按已陪时间百分比退<br>单子最后10min则全额不退，提出默认送单</p>
+      
+      <div class="end-mark">- END -</div>
+    </div>
+    
+    <button class="btn-base btn-close" style="margin-top: 1.5em; flex: none;" id="btnCloseNotice">返 回 档 案</button>
+  </div>
+</div>
+
+<script>
+  /* ================= 音乐播放器控制逻辑 ================= */
+  const audio = document.getElementById('bgm');
+  const btn = document.getElementById('music-btn');
+  const icon = document.getElementById('music-icon');
+
+  // 尝试在用户第一次点击页面任意位置时自动播放音乐
+  document.body.addEventListener('click', () => {
+    if (audio.paused) {
+      audio.play().catch(e => console.log("等待用户点击播放按钮"));
+    }
+  }, { once: true }); // 只触发一次
+
+  // 点击按钮控制播放/暂停
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation(); // 防止触发全局点击
+    if (audio.paused) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  });
+
+  // 监听音频状态，同步 UI 图标和旋转动画
+  audio.addEventListener('play', () => {
+    btn.classList.add('playing');
+    // 切换为暂停图标
+    icon.setAttribute('d', 'M6 19h4V5H6v14zm8-14v14h4V5h-4z');
+  });
+  
+  audio.addEventListener('pause', () => {
+    btn.classList.remove('playing');
+    // 切换为播放图标
+    icon.setAttribute('d', 'M8 5v14l11-7z');
+  });
+
+  /* ---------- 生成背景星空 ---------- */
+  (function makeStars() {
+    const layer = document.getElementById('stars');
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 80; i++) {
+      const s = document.createElement('i');
+      s.style.left = (Math.random() * 100).toFixed(2) + '%';
+      s.style.top  = (Math.random() * 72).toFixed(2) + '%';
+      s.style.setProperty('--sz', (Math.random() * 2 + 1).toFixed(1) + 'px');
+      s.style.animationDelay = (Math.random() * 5).toFixed(2) + 's';
+      frag.appendChild(s);
+    }
+    layer.appendChild(frag);
+  })();
+
+  /* ---------- 生成漂浮光尘 ---------- */
+  (function makeDust() {
+    const layer = document.getElementById('dustLayer');
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('i');
+      p.style.left = (Math.random() * 100).toFixed(2) + '%';
+      p.style.setProperty('--dur', (5 + Math.random() * 5) + 's');
+      p.style.setProperty('--delay', (Math.random() * 5) + 's');
+      const size = (Math.random() * 1.5 + 0.5) + 'px';
+      p.style.width = size;
+      p.style.height = size;
+      frag.appendChild(p);
+    }
+    layer.appendChild(frag);
+  })();
+
+  /* ---------- 生成加载界面的火星粒子 ---------- */
+  (function makeLoadParticles() {
+    const layer = document.getElementById('loadParticles');
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('i');
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.setProperty('--dur', (2 + Math.random() * 3) + 's');
+      p.style.setProperty('--delay', (Math.random() * 3) + 's');
+      const size = (Math.random() * 2 + 1) + 'px';
+      p.style.width = size;
+      p.style.height = size;
+      layer.appendChild(p);
+    }
+  })();
+
+  /* ---------- 加载进度与过场控制 ---------- */
+  const loadingScreen = document.getElementById('loading-screen');
+  const loadingText = document.getElementById('loadingText');
+  const progressBar = document.getElementById('progressBar');
+  const shockwave = document.getElementById('shockwave');
+  const branch = document.getElementById('branch');
+  const scene = document.getElementById('scene');
+  const introText = document.getElementById('introText');
+  const birds = document.querySelectorAll('.bird');
+
+  let progress = 0;
+
+  const loadInterval = setInterval(() => {
+    progress += Math.random() * 1.5 + 0.8; 
+    
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(loadInterval);
+      
+      loadingText.innerText = '加载完成';
+      loadingText.style.animation = 'none'; 
+      loadingText.style.opacity = '1';
+      loadingText.style.textShadow = '0 0 20px #ff4d6d, 0 0 40px #ff4d6d';
+      shockwave.classList.add('play');
+      
+      setTimeout(() => {
+        loadingScreen.classList.add('hide');
+        branch.classList.add('grow');
+        
+        // 树枝动画1.5s，长完立刻飞
+        setTimeout(() => {
+          startBirdSequence();
+        }, 1700); 
+        
+      }, 1000);
+    }
+    progressBar.style.width = progress + '%';
+  }, 60);
+
+  /* ---------- 千纸鹤入场时序 ---------- */
+  let landedCount = 0;
+  
+  function startBirdSequence() {
+    const timings = [
+      { dur: 2600, delay: 300 },  
+      { dur: 3200, delay: 1500 }, 
+      { dur: 2800, delay: 800 }  
+    ];
+
+    birds.forEach((bird, i) => {
+      const t = timings[i];
+      bird.style.setProperty('--flyDur', t.dur + 'ms');
+      
+      setTimeout(() => bird.classList.add('fly'), t.delay);
+
+      bird.addEventListener('animationend', (e) => {
+        if (e.animationName === 'flyIn') {
+          bird.classList.remove('fly'); 
+          bird.classList.add('landed');
+          
+          landedCount++;
+          if (landedCount === 3) triggerIntroSequence();
+        }
+      });
+
+      setTimeout(() => {
+        if (!bird.classList.contains('landed')) {
+          bird.classList.remove('fly');
+          bird.classList.add('landed');
+          landedCount++;
+          if (landedCount === 3) triggerIntroSequence();
+        }
+      }, t.delay + t.dur + 100);
+    });
+  }
+
+  /* ---------- 引导语与按钮显示时序 ---------- */
+  function triggerIntroSequence() {
+    setTimeout(() => {
+      introText.classList.add('show');
+    }, 800);
+
+    setTimeout(() => {
+      introText.classList.remove('show');
+    }, 800 + 2500);
+
+    setTimeout(() => {
+      scene.classList.add('show-tags');
+    }, 800 + 2500 + 1500); 
+  }
+
+  /* ---------- whispers 浮现文字逻辑 ---------- */
+  const whisperLayer = document.getElementById('whisperLayer');
+  const whisperText = document.getElementById('whisperText');
+
+  /* ---------- 交互按键绑定 ---------- */
+  document.querySelectorAll('.tag').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const target = btn.dataset.target;
+      
+      if (target === 'bitter' || target === 'void') {
+        // 1. 直接显示界面
+        const screen = document.getElementById('screen-' + target);
+        if (screen) screen.classList.add('show');
+
+        // 2. 设置并显示文字层 (带模糊)
+        if (target === 'bitter') {
+          whisperText.innerText = '还不是现在，还没到我们相见的时候';
+        } else {
+          whisperText.innerText = '再等等吧，等我准备好我们的约会';
+        }
+        whisperLayer.classList.add('show');
+
+        // 3. 定时消失（停留在界面上）
+        setTimeout(() => {
+          whisperLayer.classList.remove('show');
+        }, 2800);
+        
+      } else {
+        // 病恋正常显示
+        const targetScreen = document.getElementById('screen-' + target);
+        if (targetScreen) targetScreen.classList.add('show');
+      }
+    });
+  });
+
+  // 普通的返回按钮
+  document.querySelectorAll('.screen .back:not(#btnBackSick)').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.closest('.screen').classList.remove('show');
+    });
+  });
+
+  /* ---------- 病恋专属抛弃逻辑 ---------- */
+  const btnBackSick = document.getElementById('btnBackSick');
+  const abandonModal = document.getElementById('abandonModal');
+  const btnStay = document.getElementById('btnStay');
+  const btnLeave = document.getElementById('btnLeave');
+  const screenSick = document.getElementById('screen-sick');
+
+  btnBackSick.addEventListener('click', (e) => {
+    e.stopPropagation();
+    abandonModal.classList.add('show');
+  });
+
+  btnStay.addEventListener('click', () => {
+    abandonModal.classList.remove('show');
+  });
+
+  btnLeave.addEventListener('click', () => {
+    abandonModal.classList.remove('show');
+    screenSick.classList.remove('show');
+  });
+
+  /* ---------- 弹窗与解体动画逻辑 ---------- */
+  const btnOpenSick = document.getElementById('btnOpenSick');
+  const btnCloseArchive = document.getElementById('btnCloseArchive');
+  const archiveModal = document.getElementById('archiveModal');
+  const unfoldLayer = document.getElementById('unfoldLayer');
+
+  const btnNotice = document.getElementById('btnNotice');
+  const btnCloseNotice = document.getElementById('btnCloseNotice');
+  const noticeModal = document.getElementById('noticeModal');
+
+  const btnBoard = document.getElementById('btnBoard');
+  const btnCloseBoard = document.getElementById('btnCloseBoard');
+  const subpageBoard = document.getElementById('subpage-board');
+
+  const btnScripts = document.getElementById('btnScripts');
+  const btnCloseScripts = document.getElementById('btnCloseScripts');
+  const subpageScripts = document.getElementById('subpage-scripts');
+
+  const btnCards = document.getElementById('btnCards');
+  const btnCloseCards = document.getElementById('btnCloseCards');
+  const subpageCards = document.getElementById('subpage-cards');
+
+  btnOpenSick.addEventListener('click', () => {
+    unfoldLayer.classList.add('active');
+    setTimeout(() => unfoldLayer.classList.add('scatter'), 300);
+    setTimeout(() => {
+      unfoldLayer.classList.remove('active');
+      archiveModal.classList.add('show');
+      setTimeout(() => unfoldLayer.classList.remove('scatter'), 400);
+    }, 1600);
+  });
+
+  btnCloseArchive.addEventListener('click', () => archiveModal.classList.remove('show'));
+
+  btnNotice.addEventListener('click', () => noticeModal.classList.add('show'));
+  btnCloseNotice.addEventListener('click', () => noticeModal.classList.remove('show'));
+
+  btnBoard.addEventListener('click', () => subpageBoard.classList.add('show'));
+  btnCloseBoard.addEventListener('click', () => subpageBoard.classList.remove('show'));
+
+  btnScripts.addEventListener('click', () => subpageScripts.classList.add('show'));
+  btnCloseScripts.addEventListener('click', () => subpageScripts.classList.remove('show'));
+
+  btnCards.addEventListener('click', () => subpageCards.classList.add('show'));
+  btnCloseCards.addEventListener('click', () => subpageCards.classList.remove('show'));
+
+  archiveModal.addEventListener('click', (e) => {
+    if (e.target === archiveModal) archiveModal.classList.remove('show');
+  });
+  
+  noticeModal.addEventListener('click', (e) => {
+    if (e.target === noticeModal) noticeModal.classList.remove('show');
+  });
+
+  subpageBoard.addEventListener('click', (e) => {
+    if (e.target === subpageBoard) subpageBoard.classList.remove('show');
+  });
+  subpageScripts.addEventListener('click', (e) => {
+    if (e.target === subpageScripts) subpageScripts.classList.remove('show');
+  });
+  subpageCards.addEventListener('click', (e) => {
+    if (e.target === subpageCards) subpageCards.classList.remove('show');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.screen.show').forEach((s) => s.classList.remove('show'));
+      archiveModal.classList.remove('show');
+      noticeModal.classList.remove('show');
+      subpageBoard.classList.remove('show');
+      subpageScripts.classList.remove('show');
+      subpageCards.classList.remove('show');
+      abandonModal.classList.remove('show');
+      whisperLayer.classList.remove('show');
+    }
+  });
+</script>
+</body>
+</html>
